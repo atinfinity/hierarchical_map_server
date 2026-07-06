@@ -8,6 +8,18 @@
 `/map`(`transient_local`)に配信する。全タイルは単一のグローバル原点で座標系を
 共有するため、窓が切り替わってもAMCLの自己位置推定とNav2のcostmapは連続する。
 
+## デモ
+
+![tile_map_server demo](docs/tms_demo.gif)
+
+TurtleBot3 Gazebo での走行デモ。ロボット周辺の N×N タイルだけが高解像度で
+ロード・結合されて `/map`(シアンの枠)に配信され、**窓の外(全域)は未ロード**の
+まま。ロボットがタイル境界を越えると**窓が再センタリングしてスライド**し、常に
+現在地周辺だけをメモリに保持する。動画版: [`docs/tms_demo.mp4`](docs/tms_demo.mp4)。
+
+広域を1枚でカバーする全域計画が必要な場合は、低解像度の全域地図を併用する
+[hierarchical_map_server](https://github.com/atinfinity/hierarchical_map_server)(案3)を参照。
+
 ## アーキテクチャ
 
 ### モジュール構成
