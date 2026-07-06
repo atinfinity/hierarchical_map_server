@@ -1,0 +1,12 @@
+tile_map_server:
+  ros__parameters:
+    # 起動時に launch から tileset_path を上書きする(パッケージ内の分割済み地図)
+    tileset_path: ""
+    window_size: 3            # 3x3 = 6m四方の窓(タイル2m)
+    hysteresis_m: 0.3         # 狭いアリーナ用。~2m走行ごとに再センタリング
+    update_period_s: 0.3
+    global_frame: map
+    robot_frame: base_footprint   # TB3のtfフレーム(amclのbase_frame_idと一致)
+    topic_name: map
+    initial_window_center: [-2.0, -0.5]   # ロボットのスポーン位置
+    tile_cache_size: 25

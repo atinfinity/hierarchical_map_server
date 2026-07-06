@@ -1,0 +1,29 @@
+# tile_map_serverと併用する場合のAMCL / global costmap設定の要点(抜粋)
+#
+# lifecycle_manager_localizationのnode_namesは
+#   node_names: [tile_map_server, amcl]   # map_serverを置換
+# とする。
+
+amcl:
+  ros__parameters:
+    # 必須: 地図トピックの更新を受理する(窓の再センタリングごとに地図が差し替わる)
+    first_map_only: false
+    map_topic: map
+    global_frame_id: map
+    odom_frame_id: odom
+    base_frame_id: base_footprint
+    set_initial_pose: false
+    # 尤度場の最大距離。大きいほど地図更新時の再構築が重くなる
+    laser_likelihood_max_dist: 2.0
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      global_frame: map
+      robot_base_frame: base_link
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        # 必須: transient_localの/mapを購読し、更新のたびcostmapを再構築する
+        map_subscribe_transient_local: true
+        map_topic: map

@@ -1,0 +1,17 @@
+tile_map_server:
+  ros__parameters:
+    # tileset.yamlへの絶対パス(必須)
+    tileset_path: ""
+    # ロードするタイル窓の一辺(奇数)。3ならタイル50m時に150m四方を配信
+    window_size: 3
+    # 再センタリングの不感帯 [m]。タイル境界をこの距離超えて進むまで切替えない
+    hysteresis_m: 5.0
+    # 位置監視タイマー周期 [s]
+    update_period_s: 0.5
+    global_frame: map
+    robot_frame: base_link
+    topic_name: map
+    # tf確立前に配信する初期窓の中心 [x, y] (m)
+    initial_window_center: [0.0, 0.0]
+    # LRUキャッシュ保持タイル数(下限は window_size*(window_size+1) に自動補正)
+    tile_cache_size: 25

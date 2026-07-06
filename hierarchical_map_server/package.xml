@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hierarchical_map_server</name>
+  <version>0.1.0</version>
+  <description>
+    Hierarchical (multi-resolution) map layer for large-area Nav2 navigation.
+    Auto-generates a single low-resolution whole-area map from the tile dataset
+    used by tile_map_server, published latched for the global costmap so the
+    global planner can plan to goals outside the current high-resolution window.
+  </description>
+  <maintainer email="dandelion1124@gmail.com">jazzy</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>tile_map_server</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>nav2_util</depend>
+  <depend>nav_msgs</depend>
+
+  <exec_depend>nav2_lifecycle_manager</exec_depend>
+  <exec_depend>nav2_amcl</exec_depend>
+  <exec_depend>nav2_map_server</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

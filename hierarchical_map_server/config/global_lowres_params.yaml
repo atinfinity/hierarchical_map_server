@@ -1,0 +1,11 @@
+global_lowres_map_server:
+  ros__parameters:
+    # 案1と同じ tileset.yaml への絶対パス(launchから上書き)
+    tileset_path: ""
+    # 低解像度化係数。tile_size_cells の約数であること。
+    #   0.05m タイル → factor 2 で 0.1m、factor 4 で 0.2m
+    downsample_factor: 2
+    # true(推奨): 保守的max-pool(占有優先)。壁が平均化で消えない。
+    occupancy_priority: true
+    topic_name: map_global_lowres
+    global_frame: map
