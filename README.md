@@ -1,47 +1,53 @@
 # hierarchical_map_server (monorepo)
 
-ROS 2 Jazzy で広域エリア(例: 500m × 500m @0.05m)を Nav2 + AMCL で
-ナビゲーションするための、**多重解像度タイル地図**パッケージ群のモノレポ。
+A monorepo of **multi-resolution tiled map** packages for navigating a large area
+(e.g. 500m x 500m @0.05m) with Nav2 + AMCL on ROS 2 Jazzy.
 
-広域地図をグリッド状のタイルに分割して管理し、動的に現在地付近だけをロード・
-配信することで、地図全体をメモリに載せずに大規模エリアを走行できる。
+By managing the wide-area map as a grid of tiles and dynamically loading and
+publishing only the region around the robot, a large area can be driven without
+holding the whole map in memory.
 
-## デモ
+## Demo
 
 ![hierarchical_map_server demo](docs/hier_demo.gif)
 
-TurtleBot3 Gazebo での走行デモ。**低解像度の全域地図**(global costmap 用)の
-上をグローバルプランナが計画し、**高解像度窓**(シアンの枠, AMCL 用)がロボットに
-追従してスライドする。グローバル経路(オレンジ)は高解像度窓の外まで全域に
-伸びており、**窓に縛られず全域で経路計画できる**ことが分かる(案3の要点)。
-動画版: [`docs/hier_demo.mp4`](docs/hier_demo.mp4)。
+A driving demo in TurtleBot3 Gazebo. The global planner plans over the
+**low-resolution whole-area map** (for the global costmap) while the
+**high-resolution window** (cyan box, for AMCL) follows the robot and slides.
+The global path (orange) extends across the whole area beyond the high-resolution
+window, showing that **planning is done over the whole area, not bound by the
+window** (the key point of design 3). Video version:
+[`docs/hier_demo.mp4`](docs/hier_demo.mp4).
 
-## パッケージ構成
+## Packages
 
-| パッケージ | 役割 |
+| Package | Role |
 |---|---|
-| [`tile_map_server`](tile_map_server/) | 高解像度タイルを現在地周辺で結合して配信するスライディングウィンドウ地図サーバ(AMCL・costmap 用) |
-| [`hierarchical_map_server`](hierarchical_map_server/) | タイルから低解像度の全域地図を生成し、global costmap に供給。高解像度窓の外のゴールへも全域経路を計画可能にする(`tile_map_server` に依存) |
+| [`tile_map_server`](tile_map_server/) | Sliding-window map server that stitches and publishes high-resolution tiles around the robot (for AMCL and the costmap) |
+| [`hierarchical_map_server`](hierarchical_map_server/) | Generates a low-resolution whole-area map from the tiles and feeds it to the global costmap, enabling whole-area planning to goals outside the high-resolution window (depends on `tile_map_server`) |
 
-依存関係は `hierarchical_map_server` → `tile_map_server`。`hierarchical_map_server`
-は `tile_map_server` のコアライブラリ(タイルセット読込・PGMローダ)を再利用する。
-各パッケージの詳細・アーキテクチャ図は各ディレクトリの README を参照。
+The dependency is `hierarchical_map_server` → `tile_map_server`.
+`hierarchical_map_server` reuses `tile_map_server`'s core library (tileset loading,
+PGM loader). See each directory's README for package details and architecture
+diagrams.
 
-## 設計の概要
+## Design overview
 
-- **tile_map_server(スライディング窓)**: 現在地を中心とする `N×N` タイルを
-  1枚の `OccupancyGrid` に結合して `/map`(transient_local)に配信。ロボットが
-  タイル境界を越えると窓を再センタリングする。全タイルは単一のグローバル原点で
-  座標系を共有するため、窓が切り替わっても AMCL の自己位置推定は連続する。
-- **hierarchical_map_server(階層地図)**: 全タイルを起動時にダウンサンプルして
-  低解像度の全域地図を1枚生成し `/map_global_lowres` に配信。global costmap は
-  これで全域を計画し、高解像度窓は AMCL 専用、精密な障害物回避は
-  local costmap(/scan)が担う二重 costmap 構成。
+- **tile_map_server (sliding window)**: stitches the `N x N` tiles centered on the
+  robot into a single `OccupancyGrid` and publishes it on `/map`
+  (transient_local). It recenters the window when the robot crosses a tile
+  boundary. Since all tiles share a single global origin, AMCL's self-localization
+  stays continuous even when the window switches.
+- **hierarchical_map_server (hierarchical map)**: downsamples all tiles at startup
+  to generate a single low-resolution whole-area map and publishes it on
+  `/map_global_lowres`. The global costmap plans over the whole area with it, the
+  high-resolution window is AMCL-only, and precise obstacle avoidance is handled by
+  the local costmap (/scan) — a dual-costmap configuration.
 
-## ビルド
+## Build
 
 ```bash
-# 例: colcon ワークスペースの src/ 以下にクローン
+# Example: clone under a colcon workspace's src/
 mkdir -p ~/nav_ws/src && cd ~/nav_ws/src
 git clone https://github.com/atinfinity/hierarchical_map_server.git
 cd ~/nav_ws
@@ -49,25 +55,26 @@ colcon build
 source install/setup.bash
 ```
 
-依存順(`tile_map_server` → `hierarchical_map_server`)は colcon が自動解決する。
+colcon resolves the build order (`tile_map_server` → `hierarchical_map_server`)
+automatically.
 
-## テスト
+## Tests
 
 ```bash
 colcon test --packages-select tile_map_server hierarchical_map_server
 colcon test-result --verbose
 ```
 
-- `tile_map_server`: 単体テスト(タイルインデックス・ヒステリシス・結合・キャッシュ)
-- `hierarchical_map_server`: 単体テスト(ダウンサンプリング・全域組み立て)
-- 両パッケージとも TurtleBot3 Gazebo での結合走行テスト launch を同梱。
+- `tile_map_server`: unit tests (tile index, hysteresis, stitching, cache)
+- `hierarchical_map_server`: unit tests (downsampling, whole-area assembly)
+- Both packages include a TurtleBot3 Gazebo integrated driving test launch.
 
-## 対象環境
+## Target environment
 
 - ROS 2 Jazzy
-- Nav2(amcl / costmap_2d / planner)
-- 検証: TurtleBot3(Gazebo / gz sim)
+- Nav2 (amcl / costmap_2d / planner)
+- Verified with: TurtleBot3 (Gazebo / gz sim)
 
-## ライセンス
+## License
 
 Apache-2.0

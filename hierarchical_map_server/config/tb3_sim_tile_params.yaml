@@ -1,11 +1,11 @@
 tile_map_server:
   ros__parameters:
-    tileset_path: ""            # launchから上書き
-    window_size: 3              # 3x3 = 6m四方の高解像度窓(AMCL用)
+    tileset_path: ""            # overridden from launch
+    window_size: 3              # 3x3 = 6m high-res window (for AMCL)
     hysteresis_m: 0.3
     update_period_s: 0.3
     global_frame: map
     robot_frame: base_footprint
-    topic_name: map             # amcl が購読する高解像度窓
+    topic_name: map             # high-res window subscribed by amcl
     initial_window_center: [-2.0, -0.5]
     tile_cache_size: 25

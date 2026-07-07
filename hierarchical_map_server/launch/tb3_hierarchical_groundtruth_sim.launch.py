@@ -1,15 +1,16 @@
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""TurtleBot3 Gazebo + 二重costmap Nav2 + 階層地図 の結合走行テスト(完全自己位置版)。
+"""Integrated driving test of TurtleBot3 Gazebo + dual-costmap Nav2 + hierarchical map (full localization version).
 
-案3の主目的である「高解像度窓の外にあるゴールへの全域経路計画」を検証する。
-自己位置は Gazebo 真値の静的 map->odom(案1のgroundtruth版と同じ理由: 環境依存の
-nav2_amcl クラッシュを避ける)。amcl構成は hierarchical_localization.launch.py を参照。
+Verifies the main goal of design 3: "whole-area path planning to goals outside the
+high-res window". Self-localization uses a static map->odom from Gazebo ground truth
+(same reason as the groundtruth version of design 1: to avoid environment-dependent
+nav2_amcl crashes). For the amcl configuration, see hierarchical_localization.launch.py.
 
-  tile_map_server          -> /map (高解像度スライディング窓, 6m)
-  global_lowres_map_server -> /map_global_lowres (低解像度全域)
-  global_costmap.static_layer <- /map_global_lowres  (全域を計画可能)
-  local_costmap            <- /scan (リアルタイム)
+  tile_map_server          -> /map (high-res sliding window, 6m)
+  global_lowres_map_server -> /map_global_lowres (low-res whole area)
+  global_costmap.static_layer <- /map_global_lowres  (whole area is plannable)
+  local_costmap            <- /scan (real time)
 """
 
 import os
@@ -64,7 +65,7 @@ def generate_launch_description():
             'tileset_path',
             default_value=os.path.join(
                 tms_dir, 'maps', 'tb3_sandbox_tiles', 'tileset.yaml'),
-            description='案1が同梱する分割済みtb3_sandboxタイル'),
+            description='Pre-split tb3_sandbox tiles bundled with design 1'),
         DeclareLaunchArgument(
             'world',
             default_value=os.path.join(sim_dir, 'worlds', 'tb3_sandbox.sdf.xacro')),
@@ -106,7 +107,7 @@ def generate_launch_description():
                      'robot_description': robot_description}],
         remappings=remappings)
 
-    # 完全自己位置: map->odom を静的発行(odom原点=スポーン位置)
+    # Full localization: publish map->odom statically (odom origin = spawn position)
     map_to_odom = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
@@ -117,7 +118,7 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}],
         remappings=remappings)
 
-    # 高解像度スライディング窓(案1)
+    # High-res sliding window (design 1)
     tile_map_server = Node(
         package='tile_map_server',
         executable='tile_map_server_node',
@@ -127,7 +128,7 @@ def generate_launch_description():
                     {'use_sim_time': use_sim_time, 'tileset_path': tileset_path}],
         remappings=remappings)
 
-    # 低解像度全域地図(本パッケージ)
+    # Low-res whole-area map (this package)
     global_lowres = Node(
         package='hierarchical_map_server',
         executable='global_lowres_map_server',

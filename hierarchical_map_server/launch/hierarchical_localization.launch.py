@@ -1,14 +1,14 @@
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""階層localizationモジュール(再利用可能)。
+"""Hierarchical localization module (reusable).
 
-  tile_map_server        -> /map                (高解像度スライディング窓, amcl用)
-  global_lowres_map_server -> /map_global_lowres (低解像度全域, global costmap用)
-  amcl                   -> /map を購読して自己位置推定
+  tile_map_server        -> /map                (high-res sliding window, for amcl)
+  global_lowres_map_server -> /map_global_lowres (low-res whole area, for global costmap)
+  amcl                   -> subscribes to /map for self-localization
 
-3ノードを lifecycle_manager_localization が一括管理する。Nav2 bringup に組み込む
-場合は localization_launch.py の代わりにこれを使い、navigation_launch.py を
-nav2_hierarchical_params.yaml で起動する。
+The three nodes are managed together by lifecycle_manager_localization. To integrate
+into a Nav2 bringup, use this instead of localization_launch.py, and launch
+navigation_launch.py with nav2_hierarchical_params.yaml.
 """
 
 import os
@@ -36,11 +36,11 @@ def generate_launch_description():
     declare = [
         DeclareLaunchArgument('use_sim_time', default_value='false'),
         DeclareLaunchArgument('autostart', default_value='true'),
-        DeclareLaunchArgument('tileset_path', description='案1のtileset.yamlへの絶対パス'),
+        DeclareLaunchArgument('tileset_path', description='Absolute path to the tileset.yaml of design 1'),
         DeclareLaunchArgument(
             'params_file',
             default_value=os.path.join(pkg, 'config', 'nav2_hierarchical_params.yaml'),
-            description='amclを含むNav2パラメータ'),
+            description='Nav2 parameters including amcl'),
         DeclareLaunchArgument(
             'tile_params_file',
             default_value=os.path.join(pkg, 'config', 'tb3_sim_tile_params.yaml')),

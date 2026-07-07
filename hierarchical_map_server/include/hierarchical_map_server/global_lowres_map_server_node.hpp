@@ -13,8 +13,9 @@
 namespace hierarchical_map_server
 {
 
-/// タイルデータセットを起動時にダウンサンプルして低解像度の全域地図を1枚生成し、
-/// latch で配信する LifecycleNode。global costmap の static layer 用。
+/// A LifecycleNode that, at startup, downsamples the tile dataset to generate a
+/// single low-resolution global map and publishes it latched. For the global
+/// costmap's static layer.
 class GlobalLowresMapServer : public nav2_util::LifecycleNode
 {
 public:
@@ -35,7 +36,7 @@ private:
   std::string global_frame_{"map"};
 
   tile_map_server::TilesetInfo tileset_;
-  nav_msgs::msg::OccupancyGrid map_;  // 起動時に生成した低解像度全域地図
+  nav_msgs::msg::OccupancyGrid map_;  // low-resolution global map generated at startup
 
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::OccupancyGrid>::SharedPtr map_pub_;
 };

@@ -8,24 +8,24 @@ using hierarchical_map_server::downsampleTile;
 
 TEST(Downsampler, OccupancyPriorityKeepsWalls)
 {
-  // 左下ブロックに1つだけ占有(100)。保守的なら低解像度セルは占有。
+  // Only one occupied cell (100) in the bottom-left block. Conservative mode keeps the low-res cell occupied.
   std::vector<int8_t> hires = {
     0, 0, 0, 0,      // row0 (bottom)
-    100, 0, 0, 0,    // row1  -> 左下ブロック(row0-1,col0-1)に100あり
+    100, 0, 0, 0,    // row1  -> bottom-left block (row0-1,col0-1) contains a 100
     0, 0, 0, 0,      // row2
     0, 0, 0, 0,      // row3 (top)
   };
   auto lo = downsampleTile(hires, 4, 2, /*occupancy_priority=*/true);
   ASSERT_EQ(lo.size(), 4u);  // 2x2
-  EXPECT_EQ(lo[0], 100);     // 左下: 占有が残る
-  EXPECT_EQ(lo[1], 0);       // 右下: 全自由
-  EXPECT_EQ(lo[2], 0);       // 左上
-  EXPECT_EQ(lo[3], 0);       // 右上
+  EXPECT_EQ(lo[0], 100);     // bottom-left: occupied is kept
+  EXPECT_EQ(lo[1], 0);       // bottom-right: all free
+  EXPECT_EQ(lo[2], 0);       // top-left
+  EXPECT_EQ(lo[3], 0);       // top-right
 }
 
 TEST(Downsampler, MajorityVoteModeCanDropSingleOccupied)
 {
-  // 左下ブロックに占有1・自由3 → 多数決では自由
+  // Bottom-left block has 1 occupied and 3 free -> majority vote yields free
   std::vector<int8_t> hires = {
     0, 0, 0, 0,
     100, 0, 0, 0,
@@ -33,12 +33,12 @@ TEST(Downsampler, MajorityVoteModeCanDropSingleOccupied)
     0, 0, 0, 0,
   };
   auto lo = downsampleTile(hires, 4, 2, /*occupancy_priority=*/false);
-  EXPECT_EQ(lo[0], 0);  // 1 vs 3 → 自由
+  EXPECT_EQ(lo[0], 0);  // 1 vs 3 -> free
 }
 
 TEST(Downsampler, MajorityVoteTieGoesOccupied)
 {
-  // 左下ブロックに占有2・自由2 → 同数は占有優先
+  // Bottom-left block has 2 occupied and 2 free -> ties go to occupied
   std::vector<int8_t> hires = {
     100, 100, 0, 0,
     0, 0, 0, 0,
@@ -60,7 +60,7 @@ TEST(Downsampler, UnknownPropagatesWhenNoKnownCells)
 
 TEST(Downsampler, FreeBeatsUnknownButNotOccupied)
 {
-  // ブロック: 自由1・未知3 → 自由(既知が優先、占有はなし)
+  // Block: 1 free and 3 unknown -> free (known takes priority, no occupied)
   std::vector<int8_t> hires = {
     0, -1, -1, -1,
     -1, -1, -1, -1,

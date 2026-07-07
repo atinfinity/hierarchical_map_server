@@ -17,7 +17,7 @@ find_package(nav2_util REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-# コアロジック(ノード非依存、単体テスト対象)
+# Core logic (node-independent, target of unit tests)
 add_library(${PROJECT_NAME}_core
   src/downsampler.cpp
 )
@@ -26,10 +26,10 @@ target_include_directories(${PROJECT_NAME}_core PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 ament_target_dependencies(${PROJECT_NAME}_core PUBLIC tile_map_server nav_msgs)
-# tile_map_server_core(静的lib)が参照する yaml-cpp を下流へ伝播させる
+# Propagate the yaml-cpp referenced by tile_map_server_core (static lib) downstream
 target_link_libraries(${PROJECT_NAME}_core PUBLIC yaml-cpp::yaml-cpp)
 
-# ノード本体
+# Node body
 add_executable(global_lowres_map_server
   src/global_lowres_map_server_node.cpp
   src/main.cpp

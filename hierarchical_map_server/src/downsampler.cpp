@@ -42,10 +42,10 @@ std::vector<int8_t> downsampleTile(
 
       int8_t result;
       if (occupancy_priority) {
-        // 保守的: 占有が1つでもあれば占有。壁を残す。
+        // Conservative: if even one cell is occupied, the result is occupied. Keeps walls.
         result = occupied > 0 ? 100 : (free > 0 ? 0 : -1);
       } else {
-        // 多数決(同数は占有優先)。既知セルが無ければ未知。
+        // Majority vote (ties go to occupied). Unknown if there are no known cells.
         if (occupied == 0 && free == 0) {
           result = -1;
         } else {
@@ -73,11 +73,11 @@ std::vector<TileIndex> enumerateTiles(const std::filesystem::path & tiles_dir)
       continue;
     }
     const auto name = entry.path().filename().string();
-    // 期待形式: tile_{x}_{y}.pgm  (x,y は負を含む整数)
+    // Expected format: tile_{x}_{y}.pgm  (x,y are integers, may be negative)
     if (name.rfind("tile_", 0) != 0 || entry.path().extension() != ".pgm") {
       continue;
     }
-    const std::string stem = name.substr(5, name.size() - 5 - 4);  // "x_y" を抽出
+    const std::string stem = name.substr(5, name.size() - 5 - 4);  // extract "x_y"
     const auto us = stem.find('_', stem.front() == '-' ? 1 : 0);
     if (us == std::string::npos) {
       continue;
@@ -90,7 +90,7 @@ std::vector<TileIndex> enumerateTiles(const std::filesystem::path & tiles_dir)
         tiles.push_back(TileIndex{x, y});
       }
     } catch (...) {
-      // 解析不能なファイル名は無視
+      // Ignore file names that cannot be parsed
     }
   }
   return tiles;
@@ -128,7 +128,7 @@ nav_msgs::msg::OccupancyGrid assembleLowresMap(
     max_y = std::max(max_y, t.y);
   }
 
-  const int lo_tile = info.tile_size_cells / f;              // 低解像度タイル一辺
+  const int lo_tile = info.tile_size_cells / f;              // side of a low-resolution tile
   const int grid_w = (max_x - min_x + 1) * lo_tile;
   const int grid_h = (max_y - min_y + 1) * lo_tile;
 
@@ -141,7 +141,7 @@ nav_msgs::msg::OccupancyGrid assembleLowresMap(
   for (const auto & t : tiles) {
     auto hires = load_tile(t);
     if (!hires) {
-      continue;  // 欠損/破損タイルは未知のまま
+      continue;  // missing/corrupt tiles remain unknown
     }
     const auto lo = downsampleTile(*hires, info.tile_size_cells, f, occupancy_priority);
     const int col0 = (t.x - min_x) * lo_tile;

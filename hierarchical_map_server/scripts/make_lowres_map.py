@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""タイルデータセットから低解像度の全域地図を生成する(オフライン版)。
+"""Generate a low-res whole-area map from a tile dataset (offline version).
 
-通常は global_lowres_map_server ノードが起動時に自動生成するため不要だが、
-地図を目視確認したい・stock nav2_map_server で配信したい場合に使う。
-出力は map_server 互換の PGM + YAML。
+Normally unnecessary since the global_lowres_map_server node generates it
+automatically at startup, but useful when you want to visually inspect the map or
+serve it with the stock nav2_map_server. The output is map_server-compatible PGM + YAML.
 
   make_lowres_map.py --tileset map_tiles/tileset.yaml --factor 4 --out lowres
 
-ノード実装 (downsampler.cpp) と同じ「占有優先 max-pool」で縮小する。
+Downsamples with the same "occupancy-priority max-pool" as the node implementation
+(downsampler.cpp).
 """
 
 import argparse
@@ -53,11 +54,11 @@ def pgm_to_trinary(img, negate, occ_th, free_th):
     out = np.full(img.shape, UNKNOWN, dtype=np.int8)
     out[occ > occ_th] = OCCUPIED
     out[occ < free_th] = FREE
-    return np.flipud(out)  # 行0=下端に揃える
+    return np.flipud(out)  # align so that row 0 = bottom edge
 
 
 def downsample_occupancy_priority(tile, f):
-    """占有優先 max-pool。tile は行0=下端の {-1,0,100}。"""
+    """Occupancy-priority max-pool. tile is {-1,0,100} with row 0 = bottom edge."""
     h, w = tile.shape
     lh, lw = h // f, w // f
     out = np.full((lh, lw), UNKNOWN, dtype=np.int8)
@@ -74,8 +75,8 @@ def downsample_occupancy_priority(tile, f):
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--tileset', required=True, help='tileset.yaml')
-    ap.add_argument('--factor', type=int, default=4, help='低解像度化係数')
-    ap.add_argument('--out', required=True, help='出力プレフィックス(.pgm/.yaml)')
+    ap.add_argument('--factor', type=int, default=4, help='downsampling factor')
+    ap.add_argument('--out', required=True, help='output prefix (.pgm/.yaml)')
     args = ap.parse_args()
 
     ts_path = pathlib.Path(args.tileset)
@@ -124,7 +125,7 @@ def main():
     pgm_path = out.with_suffix('.pgm')
     with open(pgm_path, 'wb') as fp:
         fp.write(f'P5\n{W} {H}\n255\n'.encode())
-        fp.write(np.flipud(pgm).astype(np.uint8).tobytes())  # PGMは行0=上端
+        fp.write(np.flipud(pgm).astype(np.uint8).tobytes())  # in PGM, row 0 = top edge
 
     lowres_res = resolution * f
     origin = [ox + min_x * tile_cells * resolution,
