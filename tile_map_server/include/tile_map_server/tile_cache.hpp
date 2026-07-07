@@ -14,9 +14,9 @@
 namespace tile_map_server
 {
 
-/// タイルのLRUキャッシュ。get()はミス時にディスクからロードする。
-/// ファイル欠損・読み込み失敗は nullptr をキャッシュして返す(=未知領域)。
-/// スレッドセーフではない。ワーカースレッド1本からのみ使用すること。
+/// LRU cache of tiles. get() loads from disk on a miss.
+/// A missing file or failed read caches and returns nullptr (= unknown region).
+/// Not thread-safe. Use only from a single worker thread.
 class TileCache
 {
 public:
@@ -25,7 +25,7 @@ public:
 
   TileCache(TilesetInfo info, std::size_t capacity, ErrorCallback on_error = nullptr);
 
-  /// nullptr = タイル無し(未知領域として扱う)
+  /// nullptr = no tile (treated as unknown region)
   TileData get(const TileIndex & idx);
 
   std::size_t size() const {return entries_.size();}
@@ -35,7 +35,7 @@ private:
   std::size_t capacity_;
   ErrorCallback on_error_;
 
-  // LRU: 先頭が最近使用
+  // LRU: front is most recently used
   std::list<TileIndex> lru_;
   struct Entry
   {

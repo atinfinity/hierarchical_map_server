@@ -13,13 +13,13 @@ TilesetInfo makeInfo()
 {
   TilesetInfo info;
   info.resolution = 0.05;
-  info.tile_size_cells = 1000;  // 50 m角
+  info.tile_size_cells = 1000;  // 50 m square
   return info;
 }
 
 }  // namespace
 
-// 中心タイル(0,0): 中心(25,25)、境界はx=0,50
+// center tile (0,0): center (25,25), boundaries at x=0,50
 TEST(Recenter, StaysInsideOwnTile)
 {
   const auto info = makeInfo();
@@ -31,10 +31,10 @@ TEST(Recenter, StaysInsideOwnTile)
 TEST(Recenter, HysteresisBandBeyondBoundary)
 {
   const auto info = makeInfo();
-  // 境界(x=50)を越えても+5mまでは切替えない
+  // Even past the boundary (x=50), do not switch until +5 m
   EXPECT_FALSE(shouldRecenter(info, {0, 0}, 54.9, 25.0, 5.0));
   EXPECT_TRUE(shouldRecenter(info, {0, 0}, 55.1, 25.0, 5.0));
-  // 負方向も同様(境界x=0の外側-5mまで)
+  // Same in the negative direction (up to -5 m outside the boundary x=0)
   EXPECT_FALSE(shouldRecenter(info, {0, 0}, -4.9, 25.0, 5.0));
   EXPECT_TRUE(shouldRecenter(info, {0, 0}, -5.1, 25.0, 5.0));
 }
@@ -42,7 +42,7 @@ TEST(Recenter, HysteresisBandBeyondBoundary)
 TEST(Recenter, ChebyshevDistanceDiagonal)
 {
   const auto info = makeInfo();
-  // 斜め方向でもx/y独立(チェビシェフ)で判定される
+  // Even diagonally, the decision is made independently per x/y (Chebyshev)
   EXPECT_FALSE(shouldRecenter(info, {0, 0}, 54.9, 54.9, 5.0));
   EXPECT_TRUE(shouldRecenter(info, {0, 0}, 54.9, 55.1, 5.0));
 }
@@ -50,11 +50,11 @@ TEST(Recenter, ChebyshevDistanceDiagonal)
 TEST(Recenter, NoChatterWhenOscillatingAcrossBoundary)
 {
   const auto info = makeInfo();
-  // 境界(x=50)を±2mで往復してもタイル(0,0)中心のままなら切替は起きない
+  // Oscillating +/-2 m across the boundary (x=50) triggers no switch while centered on tile (0,0)
   for (double x : {48.0, 52.0, 49.0, 51.0, 50.0}) {
     EXPECT_FALSE(shouldRecenter(info, {0, 0}, x, 25.0, 5.0)) << "x=" << x;
   }
-  // 切替後の新中心(1,0)から見ても、同じ帯域では切替は起きない
+  // Seen from the new center (1,0) after switching, no switch occurs within the same band either
   for (double x : {48.0, 52.0, 49.0, 51.0}) {
     EXPECT_FALSE(shouldRecenter(info, {1, 0}, x, 25.0, 5.0)) << "x=" << x;
   }
@@ -63,7 +63,7 @@ TEST(Recenter, NoChatterWhenOscillatingAcrossBoundary)
 TEST(Recenter, NegativeTiles)
 {
   const auto info = makeInfo();
-  // タイル(-1,-1): 中心(-25,-25)
+  // tile (-1,-1): center (-25,-25)
   EXPECT_FALSE(shouldRecenter(info, {-1, -1}, -25.0, -25.0, 5.0));
   EXPECT_FALSE(shouldRecenter(info, {-1, -1}, 4.9, -25.0, 5.0));
   EXPECT_TRUE(shouldRecenter(info, {-1, -1}, 5.1, -25.0, 5.0));

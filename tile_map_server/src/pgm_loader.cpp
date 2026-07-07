@@ -9,7 +9,7 @@ namespace tile_map_server
 namespace
 {
 
-/// PGMヘッダのトークンを1つ読む(空白・'#'コメントをスキップ)
+/// Read one token from the PGM header (skipping whitespace and '#' comments)
 bool nextToken(std::istream & is, std::string & token)
 {
   token.clear();
@@ -29,7 +29,7 @@ bool nextToken(std::istream & is, std::string & token)
     token.push_back(static_cast<char>(c));
     c = is.get();
   }
-  // トークン直後の1文字(区切り)は消費済みでよい
+  // The one character right after the token (the delimiter) may be consumed
   return !token.empty();
 }
 
@@ -90,7 +90,7 @@ std::optional<std::vector<int8_t>> loadTileOccupancy(
     return std::nullopt;
   }
 
-  // 値→占有率のルックアップテーブル(map_serverのトリナリ変換と同等)
+  // Value-to-occupancy lookup table (equivalent to map_server's trinary conversion)
   int8_t lut[256];
   for (int v = 0; v <= maxval; ++v) {
     const double occ = info.negate ?
@@ -99,7 +99,7 @@ std::optional<std::vector<int8_t>> loadTileOccupancy(
     lut[v] = occ > info.occupied_thresh ? 100 : (occ < info.free_thresh ? 0 : -1);
   }
 
-  // PGMは行0が上端、OccupancyGridは行0が下端なので上下反転しながら変換
+  // In PGM row 0 is the top, in OccupancyGrid row 0 is the bottom, so flip vertically while converting
   std::vector<int8_t> out(n);
   for (int row = 0; row < height; ++row) {
     const uint8_t * src = raw.data() + static_cast<std::size_t>(row) * width;

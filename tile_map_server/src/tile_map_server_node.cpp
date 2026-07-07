@@ -63,7 +63,7 @@ nav2_util::CallbackReturn TileMapServer::on_configure(const rclcpp_lifecycle::St
     tileset_.resolution, tileset_.tile_size_cells, tileset_.tile_size_m(),
     window_size_, window_size_, window_size_ * tileset_.tile_size_m());
 
-  // キャッシュ容量は最低でも窓全体+一列分を確保する
+  // Ensure the cache capacity holds at least the whole window plus one extra row
   const int min_cache = window_size_ * (window_size_ + 1);
   cache_ = std::make_unique<TileCache>(
     tileset_, static_cast<std::size_t>(std::max(tile_cache_size_, min_cache)),
@@ -97,7 +97,7 @@ nav2_util::CallbackReturn TileMapServer::on_activate(const rclcpp_lifecycle::Sta
   }
   worker_ = std::thread(&TileMapServer::workerLoop, this);
 
-  // tf確立前でも初期窓を配信する(AMCLが地図を得るまでtfは出ないため)
+  // Publish the initial window even before tf is established (tf is not emitted until AMCL has a map)
   requestWindow(tileIndexOf(tileset_, initial_window_center_[0], initial_window_center_[1]));
 
   timer_ = create_wall_timer(
@@ -202,7 +202,7 @@ void TileMapServer::requestWindow(const TileIndex & center)
     if (!running_) {
       return;
     }
-    pending_ = center;  // latest-wins: 未処理の古い要求は上書き
+    pending_ = center;  // latest-wins: overwrite any pending older request
   }
   job_cv_.notify_one();
 }

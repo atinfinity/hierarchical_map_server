@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""map_server形式の地図(YAML + 画像)をtile_map_server用のタイルセットに分割する。
+"""Split a map_server-format map (YAML + image) into a tileset for tile_map_server.
 
 usage:
     split_map.py --map bigmap.yaml --tile-size-cells 1000 --out map_tiles/
 
-タイルセットの原点はタイルサイズの整数倍に切り下げて整列し、端数は未知セルで
-パディングする。全面未知のタイルはファイル出力しない。
+The tileset origin is aligned by flooring to an integer multiple of the tile size,
+and the remainder is padded with unknown cells. Tiles that are entirely unknown are
+not written to file.
 """
 
 import argparse
@@ -19,12 +20,12 @@ import numpy as np
 import yaml
 
 UNKNOWN, FREE, OCCUPIED = -1, 0, 100
-# map_server標準のPGM色規約
+# Standard map_server PGM color convention
 PGM_VALUE = {OCCUPIED: 0, FREE: 254, UNKNOWN: 205}
 
 
 def read_pgm_p5(path: pathlib.Path) -> np.ndarray:
-    """バイナリPGM(P5)を読む。Pillow非依存のフォールバック。"""
+    """Read a binary PGM (P5). A Pillow-independent fallback."""
     data = path.read_bytes()
     tokens = []
     i = 0
@@ -39,7 +40,7 @@ def read_pgm_p5(path: pathlib.Path) -> np.ndarray:
         while i < len(data) and not data[i:i + 1].isspace():
             i += 1
         tokens.append(data[start:i])
-    i += 1  # maxval直後の区切り1文字
+    i += 1  # single whitespace separator right after maxval
     magic, width, height, maxval = tokens[0], int(tokens[1]), int(tokens[2]), int(tokens[3])
     if magic != b'P5' or maxval > 255:
         raise ValueError(f'unsupported PGM format: {path}')
@@ -50,10 +51,10 @@ def read_pgm_p5(path: pathlib.Path) -> np.ndarray:
 
 
 def read_image(path: pathlib.Path) -> np.ndarray:
-    """画像をグレースケールのuint8配列(行0=上端)として読む。"""
+    """Read an image as a grayscale uint8 array (row 0 = top edge)."""
     try:
         from PIL import Image
-        Image.MAX_IMAGE_PIXELS = None  # 広域地図は巨大なので爆弾判定を無効化
+        Image.MAX_IMAGE_PIXELS = None  # wide-area maps are huge, so disable the decompression-bomb check
         with Image.open(path) as im:
             return np.asarray(im.convert('L'), dtype=np.uint8)
     except ImportError:
@@ -71,7 +72,7 @@ def write_pgm_p5(path: pathlib.Path, img: np.ndarray) -> None:
 
 def to_trinary(img: np.ndarray, negate: bool,
                occupied_thresh: float, free_thresh: float) -> np.ndarray:
-    """輝度値をmap_server互換のトリナリ占有値 {-1, 0, 100} に変換する。"""
+    """Convert luminance values to map_server-compatible trinary occupancy values {-1, 0, 100}."""
     v = img.astype(np.float64) / 255.0
     occ = v if negate else 1.0 - v
     out = np.full(img.shape, UNKNOWN, dtype=np.int8)
@@ -82,10 +83,10 @@ def to_trinary(img: np.ndarray, negate: bool,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--map', required=True, help='map_server形式のYAML')
+    parser.add_argument('--map', required=True, help='map_server-format YAML')
     parser.add_argument('--tile-size-cells', type=int, default=1000,
-                        help='タイル一辺のセル数 (default: 1000)')
-    parser.add_argument('--out', required=True, help='出力ディレクトリ')
+                        help='number of cells per tile edge (default: 1000)')
+    parser.add_argument('--out', required=True, help='output directory')
     args = parser.parse_args()
 
     map_yaml = pathlib.Path(args.map)
@@ -111,7 +112,7 @@ def main() -> None:
     print(f'reading {image_path} ...')
     img = read_image(image_path)
     occ = to_trinary(img, negate, occupied_thresh, free_thresh)
-    occ = np.flipud(occ)  # 行0=下端(ワールド+y方向に行が増える向き)に揃える
+    occ = np.flipud(occ)  # align so row 0 = bottom edge (rows increase in the world +y direction)
     height, width = occ.shape
     print(f'map: {width}x{height} cells @ {resolution} m/cell '
           f'({width * resolution:.1f} x {height * resolution:.1f} m)')
@@ -119,7 +120,7 @@ def main() -> None:
     tile_cells = args.tile_size_cells
     tile_m = tile_cells * resolution
 
-    # タイルセット原点をタイルサイズの整数倍に切り下げて整列
+    # Align the tileset origin by flooring to an integer multiple of the tile size
     ts_origin_x = math.floor(float(origin[0]) / tile_m) * tile_m
     ts_origin_y = math.floor(float(origin[1]) / tile_m) * tile_m
     pad_x = round((float(origin[0]) - ts_origin_x) / resolution)
@@ -145,7 +146,7 @@ def main() -> None:
             tile = canvas[iy * tile_cells:(iy + 1) * tile_cells,
                           ix * tile_cells:(ix + 1) * tile_cells]
             if np.all(tile == UNKNOWN):
-                continue  # 全面未知のタイルは出力しない
+                continue  # do not output tiles that are entirely unknown
             pgm = lut[tile.astype(np.uint8)]
             write_pgm_p5(tiles_dir / f'tile_{ix}_{iy}.pgm', np.flipud(pgm))
             written += 1

@@ -1,16 +1,17 @@
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""TurtleBot3 Gazebo + Nav2 + tile_map_server 結合走行テスト用launch。
+"""Launch file for TurtleBot3 Gazebo + Nav2 + tile_map_server integration drive test.
 
-Nav2標準の tb3_simulation の地図配信を tile_map_server に置き換えた構成。
-  Gazebo(gz sim, headless) + TB3 spawn + robot_state_publisher
-  tile_map_server + amcl  (lifecycle_manager_localization が管理)
+A configuration that replaces the map serving of the standard Nav2 tb3_simulation
+with tile_map_server.
+  Gazebo (gz sim, headless) + TB3 spawn + robot_state_publisher
+  tile_map_server + amcl  (managed by lifecycle_manager_localization)
   navigation_launch.py    (controller / planner / costmaps / bt / nav lifecycle)
 
-使い方:
+Usage:
   ros2 launch tile_map_server tb3_tile_nav_sim.launch.py
-  # 別端末で境界跨ぎナビゲーション:
-  ros2 run tile_map_server nav_across_boundary_test.py    (test/ に同梱)
+  # Boundary-crossing navigation in a separate terminal:
+  ros2 run tile_map_server nav_across_boundary_test.py    (bundled under test/)
 """
 
 import os
@@ -51,7 +52,7 @@ def generate_launch_description():
     robot_sdf = LaunchConfiguration('robot_sdf')
     use_rviz = LaunchConfiguration('use_rviz')
 
-    # スポーン位置(タイル境界跨ぎナビの起点)
+    # Spawn position (start point for boundary-crossing navigation)
     pose = {'x': '-2.00', 'y': '-0.50', 'z': '0.01', 'R': '0.00', 'P': '0.00', 'Y': '0.00'}
 
     remappings = [('/tf', 'tf'), ('/tf_static', 'tf_static')]
@@ -64,16 +65,16 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'params_file',
             default_value=os.path.join(bringup_dir, 'params', 'nav2_params.yaml'),
-            description='Nav2スタックのパラメータ'),
+            description='Parameters for the Nav2 stack'),
         DeclareLaunchArgument(
             'tile_params_file',
             default_value=os.path.join(pkg_dir, 'config', 'tb3_sim_tile_params.yaml'),
-            description='tile_map_serverのパラメータ'),
+            description='Parameters for tile_map_server'),
         DeclareLaunchArgument(
             'tileset_path',
             default_value=os.path.join(
                 pkg_dir, 'maps', 'tb3_sandbox_tiles', 'tileset.yaml'),
-            description='分割済みタイルセット'),
+            description='Pre-split tileset'),
         DeclareLaunchArgument(
             'world',
             default_value=os.path.join(sim_dir, 'worlds', 'tb3_sandbox.sdf.xacro')),
@@ -82,7 +83,7 @@ def generate_launch_description():
             default_value=os.path.join(sim_dir, 'urdf', 'gz_waffle.sdf.xacro')),
     ]
 
-    # gz sim が model://turtlebot3_world を解決できるようモデルパスを追加
+    # Add the model path so gz sim can resolve model://turtlebot3_world
     set_gz_resource_path = AppendEnvironmentVariable(
         'GZ_SIM_RESOURCE_PATH', os.path.join(sim_dir, 'models'))
 
@@ -131,16 +132,17 @@ def generate_launch_description():
         executable='amcl',
         name='amcl',
         output='screen',
-        # nav2_amcl の pf_kdtree アサーションは全ノード同時起動の高負荷時に
-        # 間欠的に発生する既知の上流バグ。respawnで自動復帰させる。
+        # The nav2_amcl pf_kdtree assertion is a known upstream bug that occurs
+        # intermittently under the high load of starting all nodes at once.
+        # Use respawn to recover automatically.
         respawn=True,
         respawn_delay=2.0,
         parameters=[params_file,
                     {'use_sim_time': use_sim_time,
-                     # tile_map_serverの窓更新を受理する(これが結合の要)
+                     # Accept the window updates from tile_map_server (key to the integration)
                      'first_map_only': False}],
-        # set_initial_pose は nav2_amcl の kdtree アサーションを誘発するため使わず、
-        # 結合テストスクリプトから /initialpose を publish して収束させる
+        # set_initial_pose is not used because it triggers the nav2_amcl kdtree
+        # assertion; instead publish /initialpose from the integration test script to converge
         remappings=remappings)
 
     lifecycle_localization = Node(
@@ -152,9 +154,10 @@ def generate_launch_description():
                      'autostart': autostart,
                      'node_names': ['tile_map_server', 'amcl']}])
 
-    # --- Navigation stack (map_serverを含まない) ---
-    # nav2_amcl の pf_kdtree アサーションは同時起動の高負荷時に間欠発生するため、
-    # localization(amcl)が安定してからナビスタックを起動して負荷を分散する。
+    # --- Navigation stack (does not include map_server) ---
+    # Since the nav2_amcl pf_kdtree assertion occurs intermittently under the high
+    # load of simultaneous startup, start the nav stack after localization (amcl)
+    # is stable to spread out the load.
     navigation = TimerAction(
         period=10.0,
         actions=[IncludeLaunchDescription(

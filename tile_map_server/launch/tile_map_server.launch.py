@@ -1,7 +1,8 @@
-"""tile_map_server 単体起動用launch。
+"""Launch file for running tile_map_server standalone.
 
-Nav2のbringupに組み込む場合はmap_serverをtile_map_server_nodeに置き換え、
-既存のlifecycle_manager_localizationのnode_namesに'tile_map_server'を追加する。
+To integrate into a Nav2 bringup, replace map_server with tile_map_server_node
+and add 'tile_map_server' to the node_names of the existing
+lifecycle_manager_localization.
 """
 
 from launch import LaunchDescription
@@ -18,7 +19,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
             'params_file',
-            description='tile_map_serverのパラメータYAML(tileset_pathを含めること)'),
+            description='Parameter YAML for tile_map_server (must include tileset_path)'),
         DeclareLaunchArgument('autostart', default_value='true'),
         DeclareLaunchArgument('use_sim_time', default_value='false'),
 

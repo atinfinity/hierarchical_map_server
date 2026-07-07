@@ -18,7 +18,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-# コアロジック(ノード非依存、単体テスト対象)
+# Core logic (node-independent, unit-test target)
 add_library(${PROJECT_NAME}_core
   src/tileset.cpp
   src/pgm_loader.cpp
@@ -32,7 +32,7 @@ target_include_directories(${PROJECT_NAME}_core PUBLIC
 target_link_libraries(${PROJECT_NAME}_core PUBLIC yaml-cpp::yaml-cpp)
 ament_target_dependencies(${PROJECT_NAME}_core PUBLIC nav_msgs)
 
-# ノード本体
+# Node itself
 add_executable(tile_map_server_node
   src/tile_map_server_node.cpp
   src/main.cpp

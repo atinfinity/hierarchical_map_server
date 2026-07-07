@@ -12,11 +12,11 @@
 namespace tile_map_server
 {
 
-/// バイナリPGM(P5, maxval<=255)を読み込み、map_server互換のトリナリ変換で
-/// 占有格子 {0, 100, -1} に変換する。
-/// 戻り値は行0が地図下端(OccupancyGridのデータ順)。
-/// サイズが tile_size_cells 角でない・形式不正の場合は std::nullopt と
-/// error にメッセージを返す。
+/// Read a binary PGM (P5, maxval<=255) and convert it into an occupancy grid
+/// {0, 100, -1} using map_server-compatible trinary conversion.
+/// In the return value, row 0 is the bottom of the map (OccupancyGrid data order).
+/// If the size is not a tile_size_cells square or the format is invalid, returns
+/// std::nullopt and writes a message to error.
 std::optional<std::vector<int8_t>> loadTileOccupancy(
   const TilesetInfo & info, const std::filesystem::path & path, std::string & error);
 

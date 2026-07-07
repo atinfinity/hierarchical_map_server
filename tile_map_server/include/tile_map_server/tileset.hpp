@@ -27,16 +27,16 @@ struct TileIndexHash
   }
 };
 
-/// tileset.yaml の内容。全タイルで解像度・サイズ・しきい値は共通。
+/// Contents of tileset.yaml. Resolution, size, and thresholds are shared by all tiles.
 struct TilesetInfo
 {
   double resolution{0.05};       // [m/cell]
-  int tile_size_cells{1000};     // タイル一辺のセル数
-  double origin_x{0.0};          // タイル(0,0)左下隅のグローバル座標 [m]
+  int tile_size_cells{1000};     // number of cells per tile edge
+  double origin_x{0.0};          // global coordinates of the lower-left corner of tile (0,0) [m]
   double origin_y{0.0};
   bool negate{false};
-  // map_server標準デフォルト。free_threshが0.196なのはPGM未知色205
-  // (occ=50/255≈0.1961)が未知帯に残るようにするため。
+  // map_server standard defaults. free_thresh is 0.196 so that the PGM unknown color 205
+  // (occ=50/255≈0.1961) stays within the unknown band.
   double occupied_thresh{0.65};
   double free_thresh{0.196};
   std::filesystem::path tiles_dir;
@@ -49,10 +49,10 @@ struct TilesetInfo
   }
 };
 
-/// tileset.yaml を読み込む。不正な内容は std::runtime_error を投げる。
+/// Load tileset.yaml. Throws std::runtime_error on invalid contents.
 TilesetInfo loadTilesetInfo(const std::filesystem::path & tileset_yaml);
 
-/// ワールド座標が属するタイルのインデックス(負座標対応のfloor除算)
+/// Index of the tile that the world coordinates belong to (floor division to handle negative coordinates)
 inline TileIndex tileIndexOf(const TilesetInfo & info, double wx, double wy)
 {
   const double s = info.tile_size_m();
@@ -61,7 +61,7 @@ inline TileIndex tileIndexOf(const TilesetInfo & info, double wx, double wy)
     static_cast<int>(std::floor((wy - info.origin_y) / s))};
 }
 
-/// タイル中心のワールド座標
+/// World coordinates of the tile center
 inline void tileCenterWorld(const TilesetInfo & info, const TileIndex & idx, double & cx, double & cy)
 {
   const double s = info.tile_size_m();
@@ -69,8 +69,8 @@ inline void tileCenterWorld(const TilesetInfo & info, const TileIndex & idx, dou
   cy = info.origin_y + (idx.y + 0.5) * s;
 }
 
-/// 再センタリング判定。現在の中心タイルの中心からチェビシェフ距離で
-/// 「タイル半辺 + ヒステリシス」を超えて離れたときのみ true。
+/// Recenter decision. Returns true only when the Chebyshev distance from the
+/// center of the current center tile exceeds "half tile edge + hysteresis".
 inline bool shouldRecenter(
   const TilesetInfo & info, const TileIndex & center, double wx, double wy, double hysteresis_m)
 {

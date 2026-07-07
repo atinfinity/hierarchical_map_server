@@ -21,8 +21,8 @@
 namespace tile_map_server
 {
 
-/// ロボット現在位置を中心とするタイル窓を1枚のOccupancyGridに結合して
-/// /map に配信するスライディングウィンドウ地図サーバ。
+/// Sliding-window map server that stitches a tile window centered on the robot's
+/// current position into a single OccupancyGrid and publishes it on /map.
 class TileMapServer : public nav2_util::LifecycleNode
 {
 public:
@@ -41,12 +41,12 @@ private:
   void onInitialPose(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
   bool lookupRobotPose(double & x, double & y);
 
-  /// 窓の再構築をワーカースレッドへ依頼する(最新1件のみ保持)
+  /// Request the worker thread to rebuild the window (keeps only the latest request)
   void requestWindow(const TileIndex & center);
   void stopWorker();
   void workerLoop();
 
-  // パラメータ
+  // Parameters
   std::string tileset_path_;
   int window_size_{3};
   double hysteresis_m_{5.0};
@@ -66,7 +66,7 @@ private:
   std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
 
-  // ワーカースレッドと共有する状態
+  // State shared with the worker thread
   std::thread worker_;
   std::mutex job_mutex_;
   std::condition_variable job_cv_;
@@ -74,7 +74,7 @@ private:
   bool running_{false};
 
   std::mutex center_mutex_;
-  std::optional<TileIndex> current_center_;  // 配信済み窓の中心タイル
+  std::optional<TileIndex> current_center_;  // center tile of the published window
 };
 
 }  // namespace tile_map_server

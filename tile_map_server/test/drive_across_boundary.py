@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""単一ゴールへ走行させ、走行中のタイル窓の再センタリングを記録する結合テスト。
+"""Integration test that drives to a single goal and records the tile window re-centering during the drive.
 
-tb3_tile_groundtruth_sim.launch.py(または安定した nav2_amcl があれば
-tb3_tile_nav_sim.launch.py)を起動した状態で実行する。
+Run this with tb3_tile_groundtruth_sim.launch.py (or, if a stable nav2_amcl is
+available, tb3_tile_nav_sim.launch.py) already running.
 
   ros2 run tile_map_server drive_across_boundary.py <goal_x> <goal_y>
 
-判定: ナビゲーション成功 かつ 走行中に2つ以上の異なる /map 窓(タイル境界跨ぎ
-による再センタリング)が配信されたこと。
+Pass criteria: navigation succeeds AND two or more distinct /map windows
+(re-centering due to crossing a tile boundary) are published during the drive.
 
-注意: ゴールは現在ロードされているタイル窓(window_size×タイル)の内側に置くこと。
-窓の外のゴールはグローバルプランナーが経路を引けず ABORTED になる(既知の制約。
-長距離は NavigateThroughPoses / waypoint follower で窓内の中継点に分割する)。
+Note: place the goal inside the currently loaded tile window (window_size x tiles).
+A goal outside the window results in ABORTED because the global planner cannot plan
+a path (a known limitation; for long distances, split into intermediate waypoints
+inside the window using NavigateThroughPoses / the waypoint follower).
 """
 
 import sys

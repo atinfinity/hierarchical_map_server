@@ -31,7 +31,7 @@ TileCache::TileData TileCache::get(const TileIndex & idx)
       on_error_(error);
     }
   }
-  // ファイル欠損・破損も nullptr としてキャッシュし、毎回のディスクアクセスを避ける
+  // Cache a missing or corrupt file as nullptr too, to avoid disk access every time
 
   if (entries_.size() >= capacity_) {
     entries_.erase(lru_.back());

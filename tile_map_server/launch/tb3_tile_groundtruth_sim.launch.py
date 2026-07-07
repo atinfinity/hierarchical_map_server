@@ -1,20 +1,21 @@
 # Copyright 2026
 # Licensed under the Apache License, Version 2.0
-"""TurtleBot3 Gazebo + Nav2 + tile_map_server 結合走行テスト(完全自己位置版)。
+"""TurtleBot3 Gazebo + Nav2 + tile_map_server integration drive test (perfect-localization version).
 
-tb3_tile_nav_sim.launch.py のうち amcl を、Gazeboのグラウンドトゥルースに基づく
-静的な map->odom TF(=完全自己位置)に置き換えた構成。
+A configuration that replaces amcl in tb3_tile_nav_sim.launch.py with a static
+map->odom TF based on Gazebo ground truth (= perfect localization).
 
-意図: nav2_amcl は環境によって起動時に pf_kdtree アサーションでクラッシュする
-既知の上流バグがある。このlaunchはそれを避け、tile_map_server の結合面
-  - ロボット走行に伴う map->base_footprint TF 監視 → タイル窓の再センタリング
-  - global costmap(static layer)が窓更新を消費して経路計画
-  - タイル境界を跨ぐゴールへのナビゲーション成功
-を Gazebo 実機シミュレーション上で検証する。自己位置推定そのものを AMCL で
-評価したい場合は tb3_tile_nav_sim.launch.py を使う(要: 安定した nav2_amcl)。
+Intent: nav2_amcl has a known upstream bug where, depending on the environment, it
+crashes at startup with a pf_kdtree assertion. This launch avoids that and verifies
+the integration surface of tile_map_server:
+  - Monitoring the map->base_footprint TF as the robot drives -> re-centering the tile window
+  - The global costmap (static layer) consuming window updates for path planning
+  - Successful navigation to goals that cross tile boundaries
+on a Gazebo physics simulation. If you want to evaluate localization itself with AMCL,
+use tb3_tile_nav_sim.launch.py (requires: a stable nav2_amcl).
 
-robot は (-2, -0.5) にスポーンし、gz の odom フレームはスポーン位置を原点とする。
-したがって map->odom は静的に (-2, -0.5) 平行移動となる。
+The robot spawns at (-2, -0.5), and gz's odom frame takes the spawn position as its
+origin. Therefore map->odom is a static translation of (-2, -0.5).
 """
 
 import os
@@ -113,7 +114,7 @@ def generate_launch_description():
                      'robot_description': robot_description}],
         remappings=remappings)
 
-    # 完全自己位置: map->odom を静的に発行(odom原点=スポーン位置なので spawn 分の平行移動)
+    # Perfect localization: publish map->odom statically (odom origin = spawn position, so a translation by the spawn offset)
     map_to_odom = Node(
         package='tf2_ros',
         executable='static_transform_publisher',

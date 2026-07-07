@@ -31,7 +31,7 @@ nav_msgs::msg::OccupancyGrid stitchWindow(
     for (int tx = 0; tx < window_size; ++tx) {
       const auto tile = cache.get(TileIndex{min_tile.x + tx, min_tile.y + ty});
       if (!tile) {
-        continue;  // 欠損タイルは未知のまま
+        continue;  // missing tile stays unknown
       }
       for (int row = 0; row < tile_cells; ++row) {
         const std::size_t dst_offset =

@@ -14,7 +14,7 @@ TilesetInfo makeInfo(double origin_x = 0.0, double origin_y = 0.0)
 {
   TilesetInfo info;
   info.resolution = 0.05;
-  info.tile_size_cells = 1000;  // 50 m角
+  info.tile_size_cells = 1000;  // 50 m square
   info.origin_x = origin_x;
   info.origin_y = origin_y;
   return info;

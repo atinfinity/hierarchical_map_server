@@ -21,7 +21,7 @@ using tile_map_server::stitchWindow;
 namespace
 {
 
-constexpr int kTileCells = 4;  // テスト用に小さいタイル
+constexpr int kTileCells = 4;  // small tile for testing
 constexpr uint8_t kPgmOccupied = 0;
 constexpr uint8_t kPgmFree = 254;
 constexpr uint8_t kPgmUnknown = 205;
@@ -35,7 +35,7 @@ protected:
       ("tile_map_server_test_" + std::to_string(::getpid()));
     fs::create_directories(dir_ / "tiles");
     info_.resolution = 0.5;
-    info_.tile_size_cells = kTileCells;  // 2 m角
+    info_.tile_size_cells = kTileCells;  // 2 m square
     info_.origin_x = -10.0;
     info_.origin_y = 20.0;
     info_.tiles_dir = dir_ / "tiles";
@@ -43,7 +43,7 @@ protected:
 
   void TearDown() override {fs::remove_all(dir_);}
 
-  /// PGM行0=上端の並びで書き込む(pixelsは行0=上端)
+  /// Write with row 0 = top (pixels are ordered with row 0 = top)
   void writeTile(const TileIndex & idx, const std::vector<uint8_t> & pixels)
   {
     std::ofstream f(info_.tilePath(idx), std::ios::binary);
@@ -52,7 +52,7 @@ protected:
       static_cast<std::streamsize>(pixels.size()));
   }
 
-  /// 全セル同一値のタイル
+  /// Tile with all cells set to the same value
   void writeUniformTile(const TileIndex & idx, uint8_t value)
   {
     writeTile(idx, std::vector<uint8_t>(kTileCells * kTileCells, value));
@@ -66,7 +66,7 @@ protected:
 
 TEST_F(StitcherTest, PgmLoaderConvertsAndFlips)
 {
-  // 最上行のみ占有、他は自由
+  // Only the top row is occupied, the rest is free
   std::vector<uint8_t> px(kTileCells * kTileCells, kPgmFree);
   for (int c = 0; c < kTileCells; ++c) {
     px[c] = kPgmOccupied;
@@ -76,11 +76,11 @@ TEST_F(StitcherTest, PgmLoaderConvertsAndFlips)
   std::string err;
   auto occ = loadTileOccupancy(info_, info_.tilePath({0, 0}), err);
   ASSERT_TRUE(occ.has_value()) << err;
-  // PGM上端 → OccupancyGridでは最終行(地図上端)
+  // PGM top row -> last row in the OccupancyGrid (top of the map)
   const int last_row = kTileCells - 1;
   for (int c = 0; c < kTileCells; ++c) {
-    EXPECT_EQ((*occ)[0 * kTileCells + c], 0);              // 下端は自由
-    EXPECT_EQ((*occ)[last_row * kTileCells + c], 100);     // 上端は占有
+    EXPECT_EQ((*occ)[0 * kTileCells + c], 0);              // bottom row is free
+    EXPECT_EQ((*occ)[last_row * kTileCells + c], 100);     // top row is occupied
   }
 }
 
@@ -105,7 +105,7 @@ TEST_F(StitcherTest, WindowGeometry)
   EXPECT_EQ(grid.info.width, 3u * kTileCells);
   EXPECT_EQ(grid.info.height, 3u * kTileCells);
   EXPECT_FLOAT_EQ(grid.info.resolution, 0.5f);
-  // 窓左下 = タイル(0,0)の左下 = タイルセット原点
+  // window bottom-left = bottom-left of tile (0,0) = tileset origin
   EXPECT_DOUBLE_EQ(grid.info.origin.position.x, -10.0);
   EXPECT_DOUBLE_EQ(grid.info.origin.position.y, 20.0);
   EXPECT_DOUBLE_EQ(grid.info.origin.orientation.w, 1.0);
@@ -122,7 +122,7 @@ TEST_F(StitcherTest, MissingTilesAreUnknown)
 
 TEST_F(StitcherTest, TilesPlacedAtCorrectOffsets)
 {
-  // 窓中心(1,1): 左下タイル(0,0)=自由、中心(1,1)=占有、右上(2,2)=自由。他は欠損
+  // window center (1,1): bottom-left tile (0,0)=free, center (1,1)=occupied, top-right (2,2)=free. Others missing
   writeUniformTile({0, 0}, kPgmFree);
   writeUniformTile({1, 1}, kPgmOccupied);
   writeUniformTile({2, 2}, kPgmFree);
@@ -133,14 +133,14 @@ TEST_F(StitcherTest, TilesPlacedAtCorrectOffsets)
   auto at = [&](int col, int row) {return grid.data[row * W + col];};
 
   const int T = kTileCells;
-  EXPECT_EQ(at(0, 0), 0);                    // 左下ブロック=自由
+  EXPECT_EQ(at(0, 0), 0);                    // bottom-left block = free
   EXPECT_EQ(at(T - 1, T - 1), 0);
-  EXPECT_EQ(at(T, T), 100);                  // 中央ブロック=占有
+  EXPECT_EQ(at(T, T), 100);                  // center block = occupied
   EXPECT_EQ(at(2 * T - 1, 2 * T - 1), 100);
-  EXPECT_EQ(at(2 * T, 2 * T), 0);            // 右上ブロック=自由
+  EXPECT_EQ(at(2 * T, 2 * T), 0);            // top-right block = free
   EXPECT_EQ(at(W - 1, W - 1), 0);
-  EXPECT_EQ(at(T, 0), -1);                   // 欠損タイル(1,0)=未知
-  EXPECT_EQ(at(0, T), -1);                   // 欠損タイル(0,1)=未知
+  EXPECT_EQ(at(T, 0), -1);                   // missing tile (1,0) = unknown
+  EXPECT_EQ(at(0, T), -1);                   // missing tile (0,1) = unknown
 }
 
 TEST_F(StitcherTest, UnknownPixelsStayUnknown)
@@ -174,10 +174,10 @@ TEST_F(StitcherTest, CacheEvictsLeastRecentlyUsed)
   EXPECT_NE(cache.get({0, 0}), nullptr);
   EXPECT_NE(cache.get({1, 0}), nullptr);
   EXPECT_EQ(cache.size(), 2u);
-  cache.get({2, 0});  // (0,0)が追い出される
+  cache.get({2, 0});  // (0,0) is evicted
   EXPECT_EQ(cache.size(), 2u);
 
-  // 追い出された(0,0)はディスクから再ロードされる(削除後はnullptr=未知になる)
+  // The evicted (0,0) is reloaded from disk (after deletion it becomes nullptr = unknown)
   fs::remove(info_.tilePath({0, 0}));
   EXPECT_EQ(cache.get({0, 0}), nullptr);
 }
