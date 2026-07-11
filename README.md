@@ -1,4 +1,4 @@
-# hierarchical_map_server (monorepo)
+# hierarchical_map_server
 
 A monorepo of **multi-resolution tiled map** packages for navigating a large area
 (e.g. 500m x 500m @0.05m) with Nav2 + AMCL on ROS 2 Jazzy.
