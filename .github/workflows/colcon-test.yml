@@ -1,0 +1,38 @@
+name: colcon-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  colcon-test:
+    runs-on: ubuntu-24.04
+    container:
+      image: ros:jazzy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: src/hierarchical_map_server
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          rosdep update
+          rosdep install --from-paths src --ignore-src -y
+        shell: bash
+
+      - name: Build
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --event-handlers console_cohesion+
+        shell: bash
+
+      - name: Test
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon test --event-handlers console_cohesion+
+          colcon test-result --verbose
+        shell: bash

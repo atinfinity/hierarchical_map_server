@@ -1,5 +1,7 @@
 # hierarchical_map_server
 
+[![colcon-test](https://github.com/atinfinity/hierarchical_map_server/actions/workflows/colcon-test.yml/badge.svg?branch=main)](https://github.com/atinfinity/hierarchical_map_server/actions/workflows/colcon-test.yml)
+
 A monorepo of **multi-resolution tiled map** packages for navigating a large area
 (e.g. 500m x 500m @0.05m) with Nav2 + AMCL on ROS 2 Jazzy.
 
